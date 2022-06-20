@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>sec</title>
+   <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+
+<input type="file" id="fileInput" accept="image/*">
+<br><br>
+<img src="" id="imgPreview"/>
+
+<div>
+  <label for="width">Width</label>
+  <input type="number" id="width" name="width" min="1" max="">
+  <label for="height">Height</label>
+  <input type="number" id="height" name="height" min="1" max="">
+  <button type="button" onclick="resizeImage()">Resize!</button>
+  <p id="msg"></p>
+  <div id="myDiv"></div>
+</div>
+
+<script>
+document.getElementById("fileInput").addEventListener('change', handleFileChange);
+let imageUrl;
+async function handleFileChange(e) {
+  const URL = "https://s6umm2yydg.execute-api.us-east-1.amazonaws.com/dev/";
+  try {
+    // take the first file from FilesList
+    const file = e.target.files[0];
+
+    // Extract Content-Type & filename
+    const {
+      type,
+      name
+    } = file;
+    
+    // Get upload URL
+    const params = {
+      contentType: type,
+      ext: name.split(".").pop(), // take only file extension
+      isPublic: true, // let's make it public so we can preview here
+    }
+    let resp = await axios.post(URL, params);
+    console.log(resp.data);
+    // Upload at URL
+    const {signedUrl,fileUrl} = resp.data;
+   // post the image direclty to the s3 bucket
+    await fetch(signedUrl, {
+    method: "PUT",
+    headers: {
+      "Content-Type": file.type
+    },
+    body: file
+    })
+
+    document.getElementById("imgPreview").setAttribute("src", fileUrl);
+    imageUrl = fileUrl;
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+async function resizeImage() {
+  var msg = document.getElementById('msg');
+  let h = document.getElementById("height").value;
+  h = parseInt(h);
+  console.log("height :: ", h);
+  let w = document.getElementById("width").value;
+  w = parseInt(w);
+  console.log("width :: ", w);
+  console.log(imageUrl);
+  const params = {
+    imgUrl : imageUrl,
+    height : h,
+    width : w
+  }
+
+  const apiUrl = 'https://yjhclznke9.execute-api.us-east-1.amazonaws.com/dev/resize/';
+  let resp = await axios.post(apiUrl, params);
+  console.log(resp);
+  if(resp.data.success === true) {
+    var mydiv = document.getElementById("myDiv");
+    var aTag = document.createElement('a');
+    aTag.setAttribute('href',imageUrl);
+    aTag.setAttribute('target','_blank');
+    aTag.innerText = "Click url";
+    mydiv.appendChild(aTag);
+  } else {
+    msg.innerHTML = 'failed to resize';
+  }
+}
+</script>
+</body>
+</html>

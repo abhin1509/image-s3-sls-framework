@@ -1,0 +1,52 @@
+service: image-s3-sls-framework
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "*"
+
+custom:
+  corsConfig: true
+  uploadBucketName: ${self:service}-bucket-${self:provider.stage}
+
+package:
+ patterns:
+    - '!package.json'
+    - '!package-lock.json'
+    - '!node_modules/**'
+    - '!scrap.txt'
+    - '!index.html'
+
+functions:
+  hello:
+    handler: handler.hello
+    name: imgUpload-s3
+    environment: 
+      BUCKET_NAME: ${self:custom.uploadBucketName}
+    events:
+      - http:
+          path: /
+          method: GET
+          cors: ${self:custom.corsConfig}
+      - http:
+          path: /
+          method: POST
+          cors: ${self:custom.corsConfig}
+
+resources:
+  Resources:
+    uploadBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: ${self:custom.uploadBucketName}
+            AccessControl: Private
+            CorsConfiguration:
+                CorsRules:
+                -   AllowedHeaders: ['*']
+                    AllowedMethods: [GET, PUT]
+                    AllowedOrigins: ['*']
