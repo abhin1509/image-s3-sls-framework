@@ -38,7 +38,7 @@ const uploadToBucket = async (contentType, ext, isPublic) => {
   return sendResponse(200, signedUrl, imgUrl);
 }
 
-const resize = async (imageURL, height, width) => {
+const resize = async (imageURL, height, width,contentType) => {
   const temp = await fetch(imageURL);
   const blob = await temp.buffer();
   const w = parseInt(width);
@@ -51,7 +51,7 @@ const resize = async (imageURL, height, width) => {
     Key: imgName,
     Body: image,
     ACL: 'public-read',
-    ContentType: "image/jpeg"
+    ContentType: contentType
   };
   const res = await S3.putObject(params).promise();
   console.log("uploadResult :: " + JSON.stringify(res));
@@ -76,9 +76,9 @@ module.exports.hello = async (event) => {
       return await uploadToBucket(contentType, ext, isPublic);
     }
     if (event.httpMethod === 'POST' && event.path === '/resize/') {
-      const { imgUrl, height, width } = JSON.parse(event.body);
-      console.log(imgUrl, height, width);
-      return await resize(imgUrl, height, width);
+      const { imgUrl, height, width,contentType } = JSON.parse(event.body);
+      console.log(imgUrl, height, width,contentType);
+      return await resize(imgUrl, height, width,contentType);
     }
 
   }
