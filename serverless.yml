@@ -26,6 +26,9 @@ functions:
   hello:
     handler: handler.hello
     name: imgUpload-s3
+    layers:
+      - arn:aws:lambda:us-east-1:151022622966:layer:node-fetch-v2:1
+      - arn:aws:lambda:us-east-1:151022622966:layer:resize-img:1
     environment: 
       BUCKET_NAME: ${self:custom.uploadBucketName}
     events:
@@ -37,6 +40,11 @@ functions:
           path: /
           method: POST
           cors: ${self:custom.corsConfig}
+      - http:
+          path: resize
+          method: POST
+          cors: ${self:custom.corsConfig}
+
 
 resources:
   Resources:
