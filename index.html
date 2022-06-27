@@ -25,10 +25,10 @@
 
 <script>
 document.getElementById("fileInput").addEventListener('change', handleFileChange);
-let imageUrl;
+let imgNameGlobal;
 let conType;
 async function handleFileChange(e) {
-  const URL = "https://s6umm2yydg.execute-api.us-east-1.amazonaws.com/dev/";
+  const apiURL = "https://s6umm2yydg.execute-api.us-east-1.amazonaws.com/dev/";
   try {
     // take the first file from FilesList
     const file = e.target.files[0];
@@ -45,10 +45,11 @@ async function handleFileChange(e) {
       ext: name.split(".").pop(), // take only file extension
       isPublic: true, // let's make it public so we can preview here
     }
-    let resp = await axios.post(URL, params);
+    let resp = await axios.post(apiURL, params);
     console.log(resp.data);
     // Upload at URL
-    const {signedUrl,fileUrl} = resp.data;
+    const {signedUrl,imageName} = resp.data;
+    console.log("imageName :: ", imageName);
    // post the image direclty to the s3 bucket
     await fetch(signedUrl, {
     method: "PUT",
@@ -58,8 +59,9 @@ async function handleFileChange(e) {
     body: file
     })
     conType = file.type;
-    document.getElementById("imgPreview").setAttribute("src", fileUrl);
-    imageUrl = fileUrl;
+    //document.getElementById("imgPreview").setAttribute("src", fileUrl);
+    imgPreview.src = URL.createObjectURL(file);
+    imgNameGlobal = imageName;
   } catch (e) {
     console.log(e);
   }
@@ -73,9 +75,9 @@ async function resizeImage() {
   let w = document.getElementById("width").value;
   w = parseInt(w);
   console.log("width :: ", w);
-  console.log(imageUrl);
+  console.log(imgNameGlobal);
   const params = {
-    imgUrl : imageUrl,
+    imgName : imgNameGlobal,
     height : h,
     width : w,
     contentType: conType
@@ -83,11 +85,11 @@ async function resizeImage() {
 
   const apiUrl = 'https://s6umm2yydg.execute-api.us-east-1.amazonaws.com/dev/resize/';
   let resp = await axios.post(apiUrl, params);
-  console.log(resp);
+  console.log("resize response :: " , resp);
   if(resp.data.success === true) {
     var mydiv = document.getElementById("myDiv");
     var aTag = document.createElement('a');
-    aTag.setAttribute('href',imageUrl);
+    aTag.setAttribute('href',resp.data.imageUrl);
     aTag.setAttribute('target','_blank');
     aTag.innerText = "Click url";
     mydiv.appendChild(aTag);
